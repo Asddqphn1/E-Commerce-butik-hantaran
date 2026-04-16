@@ -4,55 +4,65 @@ import { useActionState } from "react";
 import { verifyOTP } from "@/actions/verify";
 import { useSearchParams } from "next/navigation";
 
+type VerifyActionState = Awaited<ReturnType<typeof verifyOTP>>;
+
+const initialState: VerifyActionState = {
+  success: false,
+  error: "",
+};
+
 export default function VerifyPage() {
-  const [state, formAction, isPending] = useActionState(verifyOTP, {
-    success: false,
-    error: "",
-  });
+  const [state, formAction, isPending] = useActionState<
+    VerifyActionState,
+    FormData
+  >(verifyOTP, initialState);
+
   const searchParams = useSearchParams();
   const emailParam = searchParams.get("email") || "";
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-[#faf5ee] p-4 font-sans">
       <form
         action={formAction}
-        className="bg-white p-8 rounded-xl shadow-md w-full max-w-md space-y-4"
+        className="bg-white p-8 sm:p-10 rounded-2xl shadow-[0_2px_16px_rgba(58,48,42,0.04)] border border-[#d8d0c8]/60 w-full max-w-md space-y-6"
       >
-        <h2 className="text-2xl font-bold text-center text-gray-800">
-          Verifikasi Email
-        </h2>
-        <p className="text-sm text-gray-500 text-center">
-          Masukkan 6 digit kode OTP yang kami kirimkan ke email Anda.
-        </p>
+        <div className="text-center space-y-3 mb-2">
+          <h2 className="text-3xl font-serif font-medium text-[#3a302a] tracking-tight">
+            Cek Email Anda
+          </h2>
+          <p className="text-sm text-[#7a6f69] leading-relaxed px-2">
+            Kami telah mengirimkan 6 digit kode OTP ke: <br />
+            {/* Tampilkan email sebagai teks cetak tebal dengan warna Primary */}
+            <strong className="text-[#c2652a] font-semibold text-base mt-1 block">
+              {emailParam || "Email tidak ditemukan"}
+            </strong>
+          </p>
+        </div>
 
         {state?.error && (
-          <div className="p-3 bg-red-100 text-red-700 rounded-md text-sm">
+          <div className="p-4 bg-[#fdf2f2] text-[#8c3c3c] border border-[#f5d8d8] rounded-lg text-sm">
             {state.error}
           </div>
         )}
 
-        <input
-          type="email"
-          name="email"
-          defaultValue={emailParam}
-          required
-          placeholder="Email Anda"
-          className="w-full border p-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50"
-          readOnly={!!emailParam}
-        />
-        <input
-          type="text"
-          name="otp"
-          maxLength={6}
-          required
-          placeholder="Contoh: 123456"
-          className="w-full border p-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-center tracking-widest text-lg font-semibold"
-        />
+        <div className="space-y-4">
+          {/* Input email disembunyikan (hidden), tapi datanya tetap terkirim saat tombol ditekan */}
+          <input type="hidden" name="email" value={emailParam} />
+
+          <input
+            type="text"
+            name="otp"
+            maxLength={6}
+            required
+            placeholder="• • • • • •"
+            className="w-full bg-white border border-[#d8d0c8] p-3 rounded-lg focus:ring-1 focus:ring-[#c2652a] focus:border-[#c2652a] outline-none text-[#3a302a] placeholder-[#d8d0c8] transition-all text-center tracking-[0.5em] text-xl font-medium"
+          />
+        </div>
 
         <button
           type="submit"
-          disabled={isPending}
-          className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg disabled:opacity-50"
+          disabled={isPending || !emailParam}
+          className="w-full mt-2 bg-[#c2652a] hover:bg-[#a85522] text-white font-medium py-3.5 rounded-lg disabled:opacity-50 transition-colors shadow-sm"
         >
           {isPending ? "Memverifikasi..." : "Verifikasi Sekarang"}
         </button>

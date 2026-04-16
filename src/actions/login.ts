@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 
 const LoginSchema = z.object({
   email: z.string().email("Format email tidak valid"),
@@ -40,14 +41,23 @@ export async function loginUser(prevState: unknown, formData: FormData) {
       return { success: false, error: "Email atau password salah." };
     }
 
-    // TODO: Implementasi Session (JWT/NextAuth) diletakkan di sini nantinya.
-    // Sementara, kita asumsikan sukses dan redirect ke halaman booking
+    const cookieStore = await cookies();
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 60 * 24 * 7, // 7 hari
+      path: "/",
+    };
+
+    cookieStore.set("user_name", user.nama, cookieOptions);
+    cookieStore.set("user_id", String(user.id), cookieOptions);
+
   } catch (error: unknown) {
-    if (error instanceof Error && error.message === "NEXT_REDIRECT") {
-      throw error; // Biarkan Next.js menangani redirect
-    }
+     if (error instanceof Error && error.message === 'NEXT_REDIRECT') {
+        throw error;
+     }
     return { success: false, error: "Terjadi kesalahan sistem." };
   }
 
-  redirect("/booking");
+  redirect("/");
 }

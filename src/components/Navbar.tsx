@@ -1,8 +1,15 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
+import UserMenu from "./UserMenu";
 
-export default function Navbar() {
-  // TODO: Di Sprint berikutnya, variabel ini akan diambil dari Session Cookies (JWT / NextAuth)
-  const isLoggedIn = false;
+export default async function Navbar() {
+  // Membaca cookie untuk mengecek apakah user sudah login
+  const cookieStore = await cookies();
+  const userName = cookieStore.get("user_name")?.value;
+  const isLoggedIn = !!userName;
+
+  // Mengambil huruf pertama dari nama untuk dijadikan Ikon Profil (Inisial)
+  const initial = userName ? userName.charAt(0).toUpperCase() : "U";
 
   return (
     <nav className="fixed top-0 z-50 w-full border-b border-stone-200/50 bg-white/70 backdrop-blur-md">
@@ -12,41 +19,34 @@ export default function Navbar() {
           href="/"
           className="text-xl font-black tracking-tighter text-stone-900 transition hover:opacity-80"
         >
-          Butik<span className="text-orange-600">Hantaran</span>
+          Butik<span className="text-[#c2652a]">Hantaran</span>
         </Link>
 
         {/* Menu Navigasi & Autentikasi */}
         <div className="flex items-center gap-5">
-          {/* Link yang selalu muncul */}
           <Link
             href="/"
-            className="hidden text-sm font-semibold text-stone-600 transition hover:text-stone-900 sm:block"
+            className="hidden text-sm font-semibold text-[#7a6f69] transition hover:text-[#c2652a] sm:block"
           >
             Katalog
           </Link>
-          <div className="h-5 w-px bg-stone-300 hidden sm:block"></div>{" "}
+          <div className="h-5 w-px bg-[#d8d0c8] hidden sm:block"></div>{" "}
           {/* Divider */}
           {isLoggedIn ? (
-            /* Tampilan jika SUDAH Login (Profile Icon) */
-            <Link
-              href="/profile"
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-stone-900 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-stone-700 hover:shadow-md"
-              title="Profil Saya"
-            >
-              P {/* Nanti ini diganti dengan inisial user dari database */}
-            </Link>
+            /* --- TAMPILAN JIKA SUDAH LOGIN --- */
+            <UserMenu userName={userName} initial={initial} />
           ) : (
-            /* Tampilan jika BELUM Login (Masuk & Daftar) */
+            /* --- TAMPILAN JIKA BELUM LOGIN --- */
             <div className="flex items-center gap-3">
               <Link
                 href="/login"
-                className="text-sm font-semibold text-stone-700 transition hover:text-stone-900"
+                className="text-sm font-medium text-[#3a302a] transition hover:text-[#c2652a]"
               >
                 Masuk
               </Link>
               <Link
                 href="/register"
-                className="rounded-full bg-orange-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-orange-700 hover:shadow-md"
+                className="rounded-full bg-[#c2652a] px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#a85522] hover:shadow-md"
               >
                 Daftar
               </Link>

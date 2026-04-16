@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { sendOTP } from "@/lib/services/email";
 import { z } from "zod";
+import { redirect } from "next/navigation";
 
 // 1. Skema Validasi
 const RegisterSchema = z.object({
@@ -74,14 +75,16 @@ export async function registerUser(prevState: unknown, formData: FormData) {
       // Bisa handle fallback disini, tapi untuk MVP kita lanjutkan
     }
 
-    return {
-      success: true,
-      message: "Registrasi berhasil! Cek email untuk kode OTP.",
-    };
+    // return {
+    //   success: true,
+    //   message: "Registrasi berhasil! Cek email untuk kode OTP.",
+    // };
   } catch (error: unknown) {
     return {
       success: false,
       error: error instanceof Error ? error.message : "Terjadi kesalahan sistem.",
     };
   }
+
+  redirect(`/verify?email=${encodeURIComponent(email)}`);
 }

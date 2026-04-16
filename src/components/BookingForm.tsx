@@ -28,34 +28,27 @@ export default function BookingForm({ services, userId }: BookingFormProps) {
   return (
     <form
       action={formAction}
-      className="max-w-lg mx-auto bg-white p-6 rounded-xl shadow-md space-y-4"
+      // Card: Padding luas, border tipis hangat, dan ultra-soft shadow
+      className="max-w-lg mx-auto bg-white p-8 sm:p-10 rounded-2xl shadow-[0_2px_16px_rgba(58,48,42,0.04)] border border-[#d8d0c8]/60 space-y-6 font-sans"
     >
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">
-        Form Penyewaan Hantaran
+      {/* Headline: Menggunakan serif, warna hangat gelap */}
+      <h2 className="text-3xl font-serif font-medium text-center text-[#3a302a] tracking-tight mb-2">
+        Penyewaan Hantaran
       </h2>
 
       {state?.error && (
-        <div
-          className="p-3 bg-red-100 text-red-700 border border-red-300 rounded-md"
-          role="alert"
-        >
+        <div className="p-4 bg-[#fdf2f2] text-[#8c3c3c] border border-[#f5d8d8] rounded-lg text-sm">
           {state.error}
         </div>
       )}
       {state?.success && (
-        <div
-          className="p-3 bg-green-100 text-green-700 border border-green-300 rounded-md"
-          role="alert"
-        >
+        <div className="p-4 bg-[#f2f7ec] text-[#4a5c3a] border border-[#e0ebd5] rounded-lg text-sm">
           Berhasil! Pesanan Anda sedang diproses.
         </div>
       )}
 
       {isUserMissing && (
-        <div
-          className="p-3 bg-red-100 text-red-700 border border-red-300 rounded-md"
-          role="alert"
-        >
+        <div className="p-4 bg-[#fdf2f2] text-[#8c3c3c] border border-[#f5d8d8] rounded-lg text-sm">
           Data user tidak ditemukan di database. Tambahkan minimal 1 user dulu
           untuk testing booking.
         </div>
@@ -63,128 +56,137 @@ export default function BookingForm({ services, userId }: BookingFormProps) {
 
       <input type="hidden" name="user_id" value={userId ?? 1} />
 
-      {/* --- TAMBAHAN UI BARU --- */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="flex flex-col space-y-1">
+      <div className="space-y-5">
+        {/* --- NAMA PENGANTIN --- */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col space-y-1.5">
+            <label
+              htmlFor="nama_pengantin_pria"
+              className="text-sm font-medium text-[#3a302a]"
+            >
+              Pengantin Pria
+            </label>
+            <input
+              type="text"
+              id="nama_pengantin_pria"
+              name="nama_pengantin_pria"
+              required
+              disabled={isPending || isUserMissing}
+              className="w-full bg-white border border-[#d8d0c8] p-3 rounded-lg focus:ring-1 focus:ring-[#c2652a] focus:border-[#c2652a] outline-none text-[#3a302a] placeholder-[#a39a94] transition-all disabled:bg-[#faf5ee] disabled:text-[#a39a94]"
+              placeholder="Misal: Budi"
+            />
+          </div>
+          <div className="flex flex-col space-y-1.5">
+            <label
+              htmlFor="nama_pengantin_wanita"
+              className="text-sm font-medium text-[#3a302a]"
+            >
+              Pengantin Wanita
+            </label>
+            <input
+              type="text"
+              id="nama_pengantin_wanita"
+              name="nama_pengantin_wanita"
+              required
+              disabled={isPending || isUserMissing}
+              className="w-full bg-white border border-[#d8d0c8] p-3 rounded-lg focus:ring-1 focus:ring-[#c2652a] focus:border-[#c2652a] outline-none text-[#3a302a] placeholder-[#a39a94] transition-all disabled:bg-[#faf5ee] disabled:text-[#a39a94]"
+              placeholder="Misal: Siti"
+            />
+          </div>
+        </div>
+
+        {/* --- CATATAN TAMBAHAN --- */}
+        <div className="flex flex-col space-y-1.5">
           <label
-            htmlFor="nama_pengantin_pria"
-            className="text-sm font-semibold text-gray-700"
+            htmlFor="catatan_tambahan"
+            className="text-sm font-medium text-[#3a302a]"
           >
-            Nama Pengantin Pria
+            Catatan (Opsional)
           </label>
-          <input
-            type="text"
-            id="nama_pengantin_pria"
-            name="nama_pengantin_pria"
-            required
+          <textarea
+            id="catatan_tambahan"
+            name="catatan_tambahan"
+            rows={2}
             disabled={isPending || isUserMissing}
-            className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100"
-            placeholder="Misal: Budi"
+            className="w-full bg-white border border-[#d8d0c8] p-3 rounded-lg focus:ring-1 focus:ring-[#c2652a] focus:border-[#c2652a] outline-none text-[#3a302a] placeholder-[#a39a94] transition-all disabled:bg-[#faf5ee] disabled:text-[#a39a94]"
+            placeholder="Misal: Warna pita sage green"
           />
         </div>
-        <div className="flex flex-col space-y-1">
+
+        {/* --- PILIH DESAIN --- */}
+        <div className="flex flex-col space-y-1.5">
           <label
-            htmlFor="nama_pengantin_wanita"
-            className="text-sm font-semibold text-gray-700"
+            htmlFor="service_id"
+            className="text-sm font-medium text-[#3a302a]"
           >
-            Nama Pengantin Wanita
+            Pilih Desain Hantaran
           </label>
-          <input
-            type="text"
-            id="nama_pengantin_wanita"
-            name="nama_pengantin_wanita"
+          <select
+            id="service_id"
+            name="service_id"
             required
             disabled={isPending || isUserMissing}
-            className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100"
-            placeholder="Misal: Siti"
-          />
-        </div>
-      </div>
-
-      <div className="flex flex-col space-y-1">
-        <label
-          htmlFor="catatan_tambahan"
-          className="text-sm font-semibold text-gray-700"
-        >
-          Catatan (Opsional)
-        </label>
-        <textarea
-          id="catatan_tambahan"
-          name="catatan_tambahan"
-          rows={2}
-          disabled={isPending || isUserMissing}
-          className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100"
-          placeholder="Misal: Warna pita sage green"
-        />
-      </div>
-      {/* --- AKHIR TAMBAHAN UI BARU --- */}
-
-      <div className="flex flex-col space-y-1">
-        <label
-          htmlFor="service_id"
-          className="text-sm font-semibold text-gray-700"
-        >
-          Pilih Desain Hantaran
-        </label>
-        <select
-          id="service_id"
-          name="service_id"
-          required
-          disabled={isPending || isUserMissing}
-          className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100"
-        >
-          <option value="">-- Pilih Desain --</option>
-          {services.map((svc) => (
-            <option key={svc.id} value={svc.id}>
-              {svc.nama_desain} - Rp{svc.harga_reguler.toLocaleString("id-ID")}
+            className="w-full bg-white border border-[#d8d0c8] p-3 rounded-lg focus:ring-1 focus:ring-[#c2652a] focus:border-[#c2652a] outline-none text-[#3a302a] transition-all disabled:bg-[#faf5ee] disabled:text-[#a39a94]"
+          >
+            <option value="" className="text-[#a39a94]">
+              -- Pilih Desain --
             </option>
-          ))}
-        </select>
+            {services.map((svc) => (
+              <option key={svc.id} value={svc.id} className="text-[#3a302a]">
+                {svc.nama_desain} - Rp
+                {svc.harga_reguler.toLocaleString("id-ID")}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* --- TANGGAL ACARA --- */}
+        <div className="flex flex-col space-y-1.5">
+          <label
+            htmlFor="event_date"
+            className="text-sm font-medium text-[#3a302a]"
+          >
+            Tanggal Acara (H-Hari H)
+          </label>
+          <input
+            type="date"
+            id="event_date"
+            name="event_date"
+            required
+            disabled={isPending || isUserMissing}
+            className="w-full bg-white border border-[#d8d0c8] p-3 rounded-lg focus:ring-1 focus:ring-[#c2652a] focus:border-[#c2652a] outline-none text-[#3a302a] transition-all disabled:bg-[#faf5ee] disabled:text-[#a39a94]"
+          />
+          <span className="text-xs text-[#7a6f69] mt-1">
+            Box akan diantar H-7 dan diambil H+2 dari tanggal acara.
+          </span>
+        </div>
+
+        {/* --- JUMLAH BOX --- */}
+        <div className="flex flex-col space-y-1.5">
+          <label
+            htmlFor="jumlah_box"
+            className="text-sm font-medium text-[#3a302a]"
+          >
+            Jumlah Box (Maks 70)
+          </label>
+          <input
+            type="number"
+            id="jumlah_box"
+            name="jumlah_box"
+            min="1"
+            max="70"
+            required
+            disabled={isPending || isUserMissing}
+            className="w-full bg-white border border-[#d8d0c8] p-3 rounded-lg focus:ring-1 focus:ring-[#c2652a] focus:border-[#c2652a] outline-none text-[#3a302a] placeholder-[#a39a94] transition-all disabled:bg-[#faf5ee] disabled:text-[#a39a94]"
+          />
+        </div>
       </div>
 
-      <div className="flex flex-col space-y-1">
-        <label
-          htmlFor="event_date"
-          className="text-sm font-semibold text-gray-700"
-        >
-          Tanggal Acara (H-Hari H)
-        </label>
-        <input
-          type="date"
-          id="event_date"
-          name="event_date"
-          required
-          disabled={isPending || isUserMissing}
-          className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100"
-        />
-        <span className="text-xs text-gray-500">
-          Box akan diantar H-7 dan diambil H+2.
-        </span>
-      </div>
-
-      <div className="flex flex-col space-y-1">
-        <label
-          htmlFor="jumlah_box"
-          className="text-sm font-semibold text-gray-700"
-        >
-          Jumlah Box (Maks 70)
-        </label>
-        <input
-          type="number"
-          id="jumlah_box"
-          name="jumlah_box"
-          min="1"
-          max="70"
-          required
-          disabled={isPending || isUserMissing}
-          className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100"
-        />
-      </div>
-
+      {/* --- TOMBOL SUBMIT --- */}
       <button
         type="submit"
         disabled={isPending || isUserMissing}
-        className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors disabled:bg-blue-400 flex justify-center items-center"
+        className="w-full mt-4 bg-[#c2652a] hover:bg-[#a85522] text-white font-medium py-3.5 rounded-lg disabled:opacity-50 transition-colors shadow-sm flex justify-center items-center"
       >
         {isPending ? (
           <span className="animate-pulse">Memproses...</span>
