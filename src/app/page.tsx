@@ -1,170 +1,333 @@
-export default function HomePage() {
+import Image from "next/image";
+import Link from "next/link";
+import { getCurrentInventory } from "@/lib/inventory";
+import { getSession } from "@/lib/session";
+import { prisma } from "@/lib/prisma";
+
+export default async function HomePage() {
+  const inventory = await getCurrentInventory();
+  const session = await getSession();
+  const bookingUrl = session ? "/booking" : "/login";
+
+  // 1. Ambil data layanan dari database
+  const dbServices = await prisma.service.findMany({
+    orderBy: { id: "asc" },
+  });
+
+  // 2. Kamus Gambar
+  const imageMapping: Record<string, string> = {
+    "Rustic Wood Tray": "/Rustic_wood_tray.jpeg",
+    "Classic White Gold Tray": "/Classic_white_gold_tray.jpeg",
+    "Pearl Tray": "/Pearl_tray.jpeg",
+    "Crystal Tray": "/Crystal_tray.jpeg",
+    "Hidden Hantaran": "/Hidden_hantaran.jpeg",
+  };
+
+  // --- 3. LOGIKA PAKET FAVORIT (TRENDING) ---
+  const tujuhHariLalu = new Date();
+  tujuhHariLalu.setDate(tujuhHariLalu.getDate() - 7);
+
+  let topServiceId: number | undefined;
+
+  // Coba cari yang paling banyak dibooking 7 hari terakhir
+  const trendingMingguIni = await prisma.booking.groupBy({
+    by: ["service_id"],
+    where: { created_at: { gte: tujuhHariLalu } },
+    _count: { service_id: true },
+    orderBy: { _count: { service_id: "desc" } },
+    take: 1,
+  });
+
+  if (trendingMingguIni.length > 0) {
+    topServiceId = trendingMingguIni[0].service_id;
+  } else {
+    // Kalau minggu ini sepi, ambil yang terfavorit sepanjang masa
+    const trendingSepanjangMasa = await prisma.booking.groupBy({
+      by: ["service_id"],
+      _count: { service_id: true },
+      orderBy: { _count: { service_id: "desc" } },
+      take: 1,
+    });
+    if (trendingSepanjangMasa.length > 0) {
+      topServiceId = trendingSepanjangMasa[0].service_id;
+    }
+  }
+
+  // Ambil detail layanan terfavorit (atau fallback ke layanan pertama jika DB masih kosong)
+  let paketFavorit = null;
+  if (topServiceId) {
+    paketFavorit = await prisma.service.findUnique({
+      where: { id: topServiceId },
+    });
+  }
+  if (!paketFavorit && dbServices.length > 0) {
+    paketFavorit = dbServices[0];
+  }
+
+  const favoritImageUrl = paketFavorit
+    ? imageMapping[paketFavorit.nama_desain] || "/placeholder_image.jpeg"
+    : "/placeholder_image.jpeg";
+  // -----------------------------------------
+
+  const stats = [
+    { value: `${inventory.sisaBox} box`, label: "tersisa & bisa dipesan" },
+    { value: `${inventory.maxCapacity} box`, label: "kapasitas total" },
+    { value: "48 jam", label: "waktu pengerjaan" },
+    { value: "100%", label: "finishing manual" },
+  ];
+
+  const features = [
+    {
+      title: "Kurasi tema",
+      body: "Palet warna selaras, dari nude hingga earthy, sesuai karakter pasangan.",
+    },
+    {
+      title: "Detail tangan",
+      body: "Setiap pita, label, dan bunga dirakit manual dengan finishing bersih.",
+    },
+    {
+      title: "Custom pesan",
+      body: "Story card bisa disesuaikan untuk momen lamaran, akad, atau resepsi.",
+    },
+    {
+      title: "Kontrol kualitas",
+      body: "Cek ulang isi, packaging, dan keamanan sebelum berangkat ke kurir.",
+    },
+  ];
+
+  const formatRupiah = (amount: number) =>
+    new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      maximumFractionDigits: 0,
+    }).format(amount);
+
+  const steps = [
+    "Pilih tema dan warna favorit.",
+    "Kurasi isi paket sesuai kebutuhan.",
+    "Kami kirim preview sebelum produksi.",
+  ];
+
   return (
-    <main className="home">
-      <section className="hero">
-        <div className="hero-copy">
-          <p className="kicker reveal delay-1">Butik Hantaran - kurasi lokal</p>
-          <h1 className="hero-title reveal delay-2">
+    <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_20%_20%,#fef3c7_0%,#fff7ed_35%,#ffffff_70%)] text-stone-900">
+      <div className="pointer-events-none absolute -left-30 -top-35 h-72 w-72 rounded-full bg-rose-200/60 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-30 -right-25 h-72 w-72 rounded-full bg-orange-200/60 blur-3xl" />
+
+      <section className="mx-auto grid max-w-7xl gap-10 px-6 pb-20 pt-14 md:px-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:pb-28 lg:pt-20">
+        <div className="space-y-7">
+          <p className="inline-flex w-fit rounded-full border border-stone-300/70 bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-stone-700 backdrop-blur">
+            Butik Hantaran - kurasi lokal
+          </p>
+          <h1 className="max-w-2xl text-balance text-4xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl">
             Hantaran modern yang rapi, elegan, dan siap akad
           </h1>
-          <p className="hero-subtitle reveal delay-3">
+          <p className="max-w-xl text-pretty text-base leading-relaxed text-stone-600 sm:text-lg">
             Pilihan paket premium dengan palet warna lembut, detail tangan, dan
             story card yang terasa personal.
           </p>
-          <div className="hero-actions reveal delay-4">
-            <a className="btn primary" href="#katalog">
+
+          <div className="flex flex-wrap gap-3">
+            <Link
+              className="rounded-full bg-stone-900 px-6 py-3 text-sm font-semibold text-white transition duration-300 hover:-translate-y-0.5 hover:bg-stone-700"
+              href="#katalog"
+            >
               Lihat katalog
-            </a>
-            <a className="btn ghost" href="#booking">
+            </Link>
+            <Link
+              className="rounded-full border border-stone-400 bg-white/80 px-6 py-3 text-sm font-semibold text-stone-800 transition duration-300 hover:-translate-y-0.5 hover:border-stone-700"
+              href={bookingUrl}
+            >
               Custom order
-            </a>
+            </Link>
           </div>
-          <div className="hero-stats reveal delay-5">
-            <div className="stat">
-              <span className="stat-value">120+</span>
-              <span className="stat-label">desain siap kirim</span>
-            </div>
-            <div className="stat">
-              <span className="stat-value">48 jam</span>
-              <span className="stat-label">waktu pengerjaan</span>
-            </div>
-            <div className="stat">
-              <span className="stat-value">100%</span>
-              <span className="stat-label">finishing manual</span>
-            </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            {stats.map((stat) => (
+              <div
+                key={stat.label}
+                className="rounded-2xl border border-stone-200 bg-white/80 px-4 py-4 shadow-[0_10px_30px_-20px_rgba(41,37,36,0.4)] backdrop-blur"
+              >
+                <p className="text-2xl font-black text-stone-900">
+                  {stat.value}
+                </p>
+                <p className="text-xs uppercase tracking-[0.18em] text-stone-500">
+                  {stat.label}
+                </p>
+              </div>
+            ))}
           </div>
-        </div>
-        <div className="hero-card reveal delay-3">
-          <span className="card-eyebrow">Paket favorit minggu ini</span>
-          <h2 className="card-title">Paket Sakinah</h2>
-          <p className="card-note">
-            Warna creamy, aksen gold, dan bunga kering pilihan.
+          <p className="text-xs text-stone-500">
+            Data stok sinkron dengan booking yang belum dibatalkan atau selesai.
           </p>
-          <ul className="card-list">
-            <li>Hantaran skincare lengkap</li>
-            <li>Perlengkapan ibadah minimalis</li>
-            <li>Box akrilik premium</li>
-          </ul>
-          <div className="card-footer">
-            <span className="price">Mulai 480k</span>
-            <span className="badge">free kartu ucapan</span>
-          </div>
         </div>
+
+        {/* --- KOTAK PAKET FAVORIT YANG SUDAH DINAMIS --- */}
+        <aside className="relative flex flex-col justify-between overflow-hidden rounded-3xl border border-stone-300 bg-white shadow-[0_30px_80px_-30px_rgba(41,37,36,0.45)]">
+          {/* Gambar Header */}
+          <div className="relative h-48 w-full sm:h-56">
+            <Image
+              src={favoritImageUrl}
+              alt={paketFavorit?.nama_desain || "Paket Favorit"}
+              fill
+              className="object-cover"
+            />
+            {/* Gradient agar teks di atas gambar tetap terbaca */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+            <p className="absolute bottom-4 left-7 text-xs font-semibold uppercase tracking-[0.24em] text-white/90 drop-shadow-md">
+              Terlaris Minggu Ini
+            </p>
+          </div>
+
+          {/* Konten Text */}
+          <div className="p-7">
+            <h2 className="text-3xl font-extrabold tracking-tight text-stone-900">
+              {paketFavorit?.nama_desain || "Paket Eksklusif"}
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-stone-600 line-clamp-3">
+              {paketFavorit?.deskripsi ||
+                "Pilihan hantaran terbaik untuk momen spesial Anda dengan kualitas premium."}
+            </p>
+
+            <div className="mt-6 flex items-center justify-between gap-4 border-t border-stone-100 pt-5">
+              <span className="text-lg font-bold text-stone-900">
+                Mulai{" "}
+                {paketFavorit ? formatRupiah(paketFavorit.harga_wo) : "Rp -"}
+              </span>
+              <span className="rounded-full border border-orange-300 bg-orange-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-orange-700">
+                Best Seller
+              </span>
+            </div>
+          </div>
+        </aside>
       </section>
 
-      <section className="features" id="fitur">
-        <div className="section-head">
-          <p className="section-kicker">Kenapa kami</p>
-          <h2 className="section-title">Rapi, elegan, dan siap akad</h2>
-          <p className="section-lede">
+      <section className="mx-auto max-w-7xl px-6 py-14 md:px-10" id="fitur">
+        <div className="max-w-2xl space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
+            Kenapa kami
+          </p>
+          <h2 className="text-3xl font-black tracking-tight text-stone-900 sm:text-4xl">
+            Rapi, elegan, dan siap akad
+          </h2>
+          <p className="text-base leading-relaxed text-stone-600">
             Setiap paket dirancang untuk tampil cantik di foto dan terasa hangat
             saat dibuka. Detail kecil kami urus dari awal sampai akhir.
           </p>
         </div>
-        <div className="feature-grid">
-          <article className="feature-card reveal delay-1">
-            <h3>Kurasi tema</h3>
-            <p>
-              Palet warna selaras, dari nude hingga earthy, sesuai karakter
-              pasangan.
-            </p>
-          </article>
-          <article className="feature-card reveal delay-2">
-            <h3>Detail tangan</h3>
-            <p>
-              Setiap pita, label, dan bunga dirakit manual dengan finishing
-              bersih.
-            </p>
-          </article>
-          <article className="feature-card reveal delay-3">
-            <h3>Custom pesan</h3>
-            <p>
-              Story card bisa disesuaikan untuk momen lamaran, akad, atau
-              resepsi.
-            </p>
-          </article>
-          <article className="feature-card reveal delay-4">
-            <h3>Kontrol kualitas</h3>
-            <p>
-              Cek ulang isi, packaging, dan keamanan sebelum berangkat ke kurir.
-            </p>
-          </article>
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {features.map((feature) => (
+            <article
+              key={feature.title}
+              className="group rounded-2xl border border-stone-200 bg-white/80 p-5 transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_40px_-24px_rgba(41,37,36,0.55)]"
+            >
+              <h3 className="text-lg font-bold text-stone-900">
+                {feature.title}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-stone-600">
+                {feature.body}
+              </p>
+            </article>
+          ))}
         </div>
       </section>
 
-      <section className="catalog" id="katalog">
-        <div className="section-head">
-          <p className="section-kicker">Koleksi pilihan</p>
-          <h2 className="section-title">Katalog untuk setiap cerita</h2>
-          <p className="section-lede">
-            Mulai dari paket simpel hingga lengkap, semua siap disesuaikan
-            dengan warna dan isi favorit.
+      <section className="mx-auto max-w-7xl px-6 py-14 md:px-10" id="katalog">
+        <div className="max-w-2xl space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
+            Koleksi pilihan
+          </p>
+          <h2 className="text-3xl font-black tracking-tight text-stone-900 sm:text-4xl">
+            Katalog untuk setiap cerita
+          </h2>
+          <p className="text-base leading-relaxed text-stone-600">
+            Seluruh katalog berikut sudah tersinkron dengan data layanan aktif
+            butik, lengkap dengan harga reguler dan harga WO.
           </p>
         </div>
-        <div className="catalog-grid">
-          <article className="catalog-card reveal delay-1">
-            <div className="card-media media-a"></div>
-            <h3>Seruni pastel</h3>
-            <p>Nuansa lembut untuk acara lamaran yang hangat.</p>
-            <div className="card-meta">
-              <span className="tag">7 item</span>
-              <span className="tag">mulai 320k</span>
-            </div>
-          </article>
-          <article className="catalog-card reveal delay-2">
-            <div className="card-media media-b"></div>
-            <h3>Jingga terracotta</h3>
-            <p>Pilihan earthy dengan aksen bunga kering artistik.</p>
-            <div className="card-meta">
-              <span className="tag">9 item</span>
-              <span className="tag">mulai 420k</span>
-            </div>
-          </article>
-          <article className="catalog-card reveal delay-3">
-            <div className="card-media media-c"></div>
-            <h3>Ivory luxe</h3>
-            <p>Sentuhan premium untuk hari akad yang berkesan.</p>
-            <div className="card-meta">
-              <span className="tag">11 item</span>
-              <span className="tag">mulai 520k</span>
-            </div>
-          </article>
+        <div className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          {dbServices.map((service) => {
+            const imageUrl =
+              imageMapping[service.nama_desain] || "/placeholder_image.jpeg";
+
+            return (
+              <article
+                key={service.id}
+                className="rounded-2xl border border-stone-200 bg-white/85 p-4 shadow-[0_22px_40px_-30px_rgba(41,37,36,0.55)] transition duration-300 hover:-translate-y-1"
+              >
+                <div className="h-56 rounded-xl bg-white p-2 ring-1 ring-stone-200 sm:h-64">
+                  <div className="relative h-full w-full">
+                    <Image
+                      src={imageUrl}
+                      alt={service.nama_desain}
+                      fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                      className="object-contain"
+                    />
+                  </div>
+                </div>
+                <h3 className="mt-4 text-xl font-bold text-stone-900">
+                  {service.nama_desain}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-stone-600">
+                  {service.deskripsi}
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <span className="rounded-full border border-stone-300 bg-stone-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-stone-600">
+                    Reguler {formatRupiah(service.harga_reguler)}
+                  </span>
+                  <span className="rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-orange-700">
+                    WO {formatRupiah(service.harga_wo)}
+                  </span>
+                </div>
+              </article>
+            );
+          })}
         </div>
       </section>
 
-      <section className="booking" id="booking">
-        <div className="booking-card">
-          <div className="booking-copy">
-            <p className="section-kicker">Booking cepat</p>
-            <h2 className="section-title">
+      <section
+        className="mx-auto max-w-7xl px-6 pb-20 pt-14 md:px-10"
+        id="booking"
+      >
+        <div className="rounded-3xl border border-stone-300 bg-linear-to-br from-orange-100/70 via-rose-50 to-white p-7 shadow-[0_30px_80px_-40px_rgba(41,37,36,0.55)] sm:p-10">
+          <div className="max-w-2xl space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
+              Booking cepat
+            </p>
+            <h2 className="text-3xl font-black tracking-tight text-stone-900 sm:text-4xl">
               Bikin hantaran sesuai cerita kalian
             </h2>
-            <p className="section-lede">
+            <p className="text-base leading-relaxed text-stone-600">
               Konsultasi warna, isi, dan budget langsung. Kami bantu dari konsep
               sampai packing.
             </p>
           </div>
-          <div className="booking-steps">
-            <div className="step">
-              <span className="step-index">1</span>
-              <p className="step-text">Pilih tema dan warna favorit.</p>
-            </div>
-            <div className="step">
-              <span className="step-index">2</span>
-              <p className="step-text">Kurasi isi paket sesuai kebutuhan.</p>
-            </div>
-            <div className="step">
-              <span className="step-index">3</span>
-              <p className="step-text">Kami kirim preview sebelum produksi.</p>
-            </div>
+
+          <div className="mt-7 grid gap-3 md:grid-cols-3">
+            {steps.map((step, index) => (
+              <div
+                key={step}
+                className="rounded-2xl border border-stone-200 bg-white/80 p-4"
+              >
+                <p className="text-xl font-black text-stone-900">{index + 1}</p>
+                <p className="mt-1 text-sm text-stone-600">{step}</p>
+              </div>
+            ))}
           </div>
-          <div className="hero-actions">
-            <a className="btn primary" href="/booking">
+
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link
+              className="rounded-full bg-stone-900 px-6 py-3 text-sm font-semibold text-white transition duration-300 hover:-translate-y-0.5 hover:bg-stone-700"
+              href={bookingUrl}
+            >
               Mulai booking
-            </a>
-            <a className="btn ghost" href="/katalog">
+            </Link>
+            <Link
+              className="rounded-full border border-stone-400 bg-white/80 px-6 py-3 text-sm font-semibold text-stone-800 transition duration-300 hover:-translate-y-0.5 hover:border-stone-700"
+              href="#katalog"
+            >
               Lihat detail paket
-            </a>
+            </Link>
           </div>
         </div>
       </section>
