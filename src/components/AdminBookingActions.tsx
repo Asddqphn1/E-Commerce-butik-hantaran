@@ -12,9 +12,11 @@ interface Metadata {
 export default function AdminBookingActions({
   bookingId,
   metadata,
+  currentStatus,
 }: {
   bookingId: number;
   metadata: Metadata | null;
+  currentStatus: string;
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
@@ -37,13 +39,15 @@ export default function AdminBookingActions({
         </button>
 
         {/* Tombol Terima Barang (Solid) */}
-        <button
-          onClick={handleReceive}
-          disabled={isPending}
-          className="rounded-lg bg-[#c2652a] px-3 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-[#a85522] active:scale-95 disabled:opacity-50"
-        >
-          {isPending ? "Memproses..." : "Diterima"}
-        </button>
+        {currentStatus === "PENDING" && (
+          <button
+            onClick={handleReceive}
+            disabled={isPending}
+            className="rounded-lg bg-[#c2652a] px-3 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-[#a85522] active:scale-95 disabled:opacity-50"
+          >
+            {isPending ? "Memproses..." : "Diterima"}
+          </button>
+        )}
       </div>
 
       {/* MODAL POP-UP DETAIL */}

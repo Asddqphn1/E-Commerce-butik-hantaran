@@ -156,9 +156,6 @@ export default function BookingForm({ services, userId }: BookingFormProps) {
             disabled={isPending || isUserMissing}
             className="w-full bg-white border border-[#d8d0c8] p-3 rounded-lg focus:ring-1 focus:ring-[#c2652a] focus:border-[#c2652a] outline-none text-[#3a302a] transition-all disabled:bg-[#faf5ee] disabled:text-[#a39a94]"
           />
-          <span className="text-xs text-[#7a6f69] mt-1">
-            Box akan diantar H-7 dan diambil H+2 dari tanggal acara.
-          </span>
         </div>
 
         {/* --- JUMLAH BOX --- */}

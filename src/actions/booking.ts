@@ -11,7 +11,6 @@ const rateLimitCache = new Map<number, number>();
 const RATE_LIMIT_WINDOW_MS = 3000;
 
 export async function checkoutBooking(prevState: unknown, formData: FormData) {
-
   const session = await getSession();
 
   if (!session || !session.user_id) {
@@ -22,7 +21,8 @@ export async function checkoutBooking(prevState: unknown, formData: FormData) {
   }
 
   const serverUserId = session.user_id;
-  // 1. Tambahkan fields baru ke Zod parser
+
+  // 1. Validasi Zod Parser (Lengkap dengan data pengantin)
   const validatedFields = BookingSchema.safeParse({
     user_id: serverUserId,
     service_id: formData.get("service_id"),
@@ -37,7 +37,7 @@ export async function checkoutBooking(prevState: unknown, formData: FormData) {
     return { success: false, error: validatedFields.error.issues[0].message };
   }
 
-  // 2. Destructure data yang sudah tervalidasi
+  // 2. Destructure SEMUA data yang sudah tervalidasi (Tidak ada yang dihilangkan)
   const {
     user_id,
     service_id,
@@ -73,10 +73,15 @@ export async function checkoutBooking(prevState: unknown, formData: FormData) {
           );
         }
 
-        const inventory = await checkAvailability(event_date, jumlah_box, tx);
+        // TIKET BH-CORE-02: Pengecekan stok spesifik menggunakan service_id
+        const inventory = await checkAvailability(
+          event_date,
+          jumlah_box,
+          service_id,
+        );
         if (!inventory.isAvailable) {
           throw new Error(
-            `Checkout gagal. Sisa box untuk tanggal tersebut hanya ${inventory.sisaBox} box.`,
+            `Checkout gagal. Sisa box untuk desain ini hanya ${inventory.sisaBox} box pada tanggal tersebut.`,
           );
         }
 
@@ -103,11 +108,11 @@ export async function checkoutBooking(prevState: unknown, formData: FormData) {
             jumlah_box,
             total_price: calculatedTotalPrice,
             status_booking: BookingStatus.PENDING,
-            // --- SIMPAN KE JSONB ---
+            // --- SIMPAN KE JSONB (Pengantin & Catatan aman di sini) ---
             custom_metadata: {
               pengantin_pria: nama_pengantin_pria,
               pengantin_wanita: nama_pengantin_wanita,
-              catatan: catatan_tambahan || "", // Fallback empty string jika opsional kosong
+              catatan: catatan_tambahan || "",
             },
           },
         });
