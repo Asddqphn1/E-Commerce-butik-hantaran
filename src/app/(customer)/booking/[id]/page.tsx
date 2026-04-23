@@ -66,10 +66,10 @@ export default async function BookingDetailPage({
             </h1>
           </div>
           <Link
-            href="/booking"
+            href="/pesanan"
             className="rounded-full border border-[#d8d0c8] bg-white px-4 py-2 text-sm font-semibold text-[#3a302a] transition hover:bg-[#faf5ee]"
           >
-            Kembali ke Booking
+            Kembali ke Tracking
           </Link>
         </div>
 

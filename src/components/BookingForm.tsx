@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { checkoutBooking } from "@/actions/booking";
 
 type Service = {
@@ -29,8 +29,19 @@ export default function BookingForm({
   );
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const [isTermsAccepted, setIsTermsAccepted] = useState(false);
+  const [showTermsSuccessAlert, setShowTermsSuccessAlert] = useState(false);
 
   const isUserMissing = userId === null;
+
+  useEffect(() => {
+    if (!showTermsSuccessAlert) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setShowTermsSuccessAlert(false);
+    }, 2600);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [showTermsSuccessAlert]);
 
   const handleOpenTermsModal = () => {
     if (isPending || isUserMissing) return;
@@ -238,6 +249,43 @@ export default function BookingForm({
         )}
       </button>
 
+      {showTermsSuccessAlert && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="pointer-events-none fixed inset-x-4 top-4 z-60 mx-auto w-full max-w-md"
+        >
+          <div className="pointer-events-auto overflow-hidden rounded-2xl border border-emerald-200/80 bg-white/95 shadow-[0_16px_35px_rgba(5,80,45,0.18)] backdrop-blur-sm">
+            <div className="h-1.5 w-full bg-linear-to-r from-emerald-500 via-lime-500 to-amber-400" />
+            <div className="flex items-start gap-3 p-4">
+              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  className="h-5 w-5"
+                  aria-hidden="true"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M16.704 5.29a1 1 0 010 1.42l-7 7a1 1 0 01-1.42 0l-3-3a1 1 0 011.42-1.42L9 11.586l6.296-6.296a1 1 0 011.408 0z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-emerald-800">
+                  Konfirmasi berhasil
+                </p>
+                <p className="mt-1 text-sm text-emerald-700">
+                  Aturan booking sudah disetujui. Pesanan Anda sedang diproses.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isTermsModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/45 px-4 backdrop-blur-sm">
           <div className="w-full max-w-xl rounded-2xl border border-[#d8d0c8]/50 bg-white p-6 shadow-2xl sm:p-7">
@@ -288,7 +336,15 @@ export default function BookingForm({
                 Batal
               </button>
               <button
-                type="submit"
+                type="button"
+                onClick={(event) => {
+                  const form = event.currentTarget.form;
+                  if (!form) return;
+
+                  setIsTermsModalOpen(false);
+                  setShowTermsSuccessAlert(true);
+                  form.requestSubmit();
+                }}
                 disabled={!isTermsAccepted || isPending}
                 className="rounded-lg bg-[#c2652a] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#a85522] disabled:cursor-not-allowed disabled:opacity-50"
               >
