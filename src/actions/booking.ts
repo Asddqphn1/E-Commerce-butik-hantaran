@@ -95,10 +95,11 @@ export async function checkoutBooking(prevState: unknown, formData: FormData) {
           event_date,
           jumlah_box,
           service_id,
+          tx,
         );
         if (!inventory.isAvailable) {
           throw new Error(
-            `Checkout gagal. Sisa box untuk desain ini hanya ${inventory.sisaBox} box pada tanggal tersebut.`,
+            `Checkout gagal. Sisa box hanya ${inventory.sisaBox} box (maks tanggal ini: ${inventory.sisaBoxByDate}, sisa aktif saat ini: ${inventory.sisaBoxGlobal}).`,
           );
         }
 

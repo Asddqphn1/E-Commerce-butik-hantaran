@@ -30,8 +30,15 @@ export default function BookingForm({
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const [isTermsAccepted, setIsTermsAccepted] = useState(false);
   const [showTermsSuccessAlert, setShowTermsSuccessAlert] = useState(false);
+  const [dismissedErrorMessage, setDismissedErrorMessage] = useState<
+    string | null
+  >(null);
 
   const isUserMissing = userId === null;
+  const currentErrorMessage = state?.error?.trim() ?? "";
+  const shouldShowErrorAlert =
+    currentErrorMessage.length > 0 &&
+    dismissedErrorMessage !== currentErrorMessage;
 
   useEffect(() => {
     if (!showTermsSuccessAlert) return;
@@ -42,6 +49,16 @@ export default function BookingForm({
 
     return () => window.clearTimeout(timeoutId);
   }, [showTermsSuccessAlert]);
+
+  useEffect(() => {
+    if (!shouldShowErrorAlert) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setDismissedErrorMessage(currentErrorMessage);
+    }, 5000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [shouldShowErrorAlert, currentErrorMessage]);
 
   const handleOpenTermsModal = () => {
     if (isPending || isUserMissing) return;
@@ -65,11 +82,6 @@ export default function BookingForm({
         Penyewaan Hantaran
       </h2>
 
-      {state?.error && (
-        <div className="p-4 bg-[#fdf2f2] text-[#8c3c3c] border border-[#f5d8d8] rounded-lg text-sm">
-          {state.error}
-        </div>
-      )}
       {state?.success && (
         <div className="p-4 bg-[#f2f7ec] text-[#4a5c3a] border border-[#e0ebd5] rounded-lg text-sm">
           Berhasil! Pesanan Anda sedang diproses.
@@ -249,7 +261,7 @@ export default function BookingForm({
         )}
       </button>
 
-      {showTermsSuccessAlert && (
+      {showTermsSuccessAlert && !state?.error && (
         <div
           role="status"
           aria-live="polite"
@@ -286,6 +298,63 @@ export default function BookingForm({
         </div>
       )}
 
+      {shouldShowErrorAlert && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="pointer-events-none fixed inset-x-4 top-4 z-70 mx-auto w-full max-w-lg"
+        >
+          <div className="pointer-events-auto overflow-hidden rounded-2xl border border-rose-200/80 bg-white/95 shadow-[0_16px_35px_rgba(120,24,36,0.2)] backdrop-blur-sm">
+            <div className="h-1.5 w-full bg-linear-to-r from-rose-500 via-red-500 to-amber-400" />
+            <div className="flex items-start gap-3 p-4">
+              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-700">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  className="h-5 w-5"
+                  aria-hidden="true"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10A8 8 0 112 10a8 8 0 0116 0zm-8-3a1 1 0 00-1 1v3a1 1 0 102 0V8a1 1 0 00-1-1zm0 8a1.25 1.25 0 100-2.5A1.25 1.25 0 0010 15z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-rose-800">
+                  Booking gagal
+                </p>
+                <p className="mt-1 text-sm text-rose-700">
+                  {currentErrorMessage}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDismissedErrorMessage(currentErrorMessage)}
+                className="rounded-full p-1 text-rose-500 transition hover:bg-rose-50 hover:text-rose-700"
+                aria-label="Tutup alert error"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  className="h-4 w-4"
+                  aria-hidden="true"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isTermsModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/45 px-4 backdrop-blur-sm">
           <div className="w-full max-w-xl rounded-2xl border border-[#d8d0c8]/50 bg-white p-6 shadow-2xl sm:p-7">
@@ -312,7 +381,7 @@ export default function BookingForm({
               </li>
               <li>
                 5. Kerusakan atau kehilangan barang akan dikenakan denda sesuai
-                kebijakan butik.
+                kebijakan butik hantaran.
               </li>
             </ol>
 
@@ -341,6 +410,7 @@ export default function BookingForm({
                   const form = event.currentTarget.form;
                   if (!form) return;
 
+                  setDismissedErrorMessage(null);
                   setIsTermsModalOpen(false);
                   setShowTermsSuccessAlert(true);
                   form.requestSubmit();

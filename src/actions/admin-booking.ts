@@ -36,11 +36,12 @@ export async function createManualBooking(formData: FormData) {
         event_date,
         jumlah_box,
         service_id,
+        tx,
       );
 
       if (!inventory.isAvailable) {
         throw new Error(
-          `Stok tidak cukup! Sisa box fisik untuk tanggal ini hanya ${inventory.sisaBox} box.`,
+          `Stok tidak cukup! Sisa box hanya ${inventory.sisaBox} box (maks tanggal ini: ${inventory.sisaBoxByDate}, sisa aktif saat ini: ${inventory.sisaBoxGlobal}).`,
         );
       }
 

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus, Prisma } from "@prisma/client";
 import { calculateBookingDates } from "./dates";
 
 const NON_BLOCKING_STATUSES: BookingStatus[] = [
@@ -7,12 +7,15 @@ const NON_BLOCKING_STATUSES: BookingStatus[] = [
   BookingStatus.RETURNED,
 ];
 
+type InventoryDbClient = Prisma.TransactionClient | typeof prisma;
+
 export async function checkAvailability(
   eventDateIso: string,
   requestedBoxes: number,
   serviceId: number,
+  db: InventoryDbClient = prisma,
 ) {
-  const service = await prisma.service.findUnique({
+  const service = await db.service.findUnique({
     where: { id: serviceId },
   });
 
@@ -20,27 +23,47 @@ export async function checkAvailability(
 
   // Logic Bypass untuk Hidden Hantaran (Unlimited)
   if (service.is_unlimited) {
-    return { isAvailable: true, sisaBox: 999 };
+    return {
+      isAvailable: true,
+      sisaBox: 999,
+      sisaBoxByDate: 999,
+      sisaBoxGlobal: 999,
+    };
   }
 
   const { dropOffDate, returnDate } = calculateBookingDates(eventDateIso);
 
-  const overlappingBookings = await prisma.booking.aggregate({
-    _sum: { jumlah_box: true },
-    where: {
-      service_id: serviceId,
-      status_booking: { notIn: NON_BLOCKING_STATUSES },
-      drop_off_date: { lte: returnDate },
-      return_date: { gte: dropOffDate },
-    },
-  });
+  const [overlappingBookings, globalOpenBookings] = await Promise.all([
+    db.booking.aggregate({
+      _sum: { jumlah_box: true },
+      where: {
+        service_id: serviceId,
+        status_booking: { notIn: NON_BLOCKING_STATUSES },
+        drop_off_date: { lte: returnDate },
+        return_date: { gte: dropOffDate },
+      },
+    }),
+    db.booking.aggregate({
+      _sum: { jumlah_box: true },
+      where: {
+        service_id: serviceId,
+        status_booking: { notIn: NON_BLOCKING_STATUSES },
+      },
+    }),
+  ]);
 
-  const totalBooked = overlappingBookings._sum.jumlah_box || 0;
-  const sisaBox = service.stok_box - totalBooked;
+  const totalBookedByDate = overlappingBookings._sum.jumlah_box || 0;
+  const totalBookedGlobal = globalOpenBookings._sum.jumlah_box || 0;
+
+  const sisaBoxByDate = Math.max(0, service.stok_box - totalBookedByDate);
+  const sisaBoxGlobal = Math.max(0, service.stok_box - totalBookedGlobal);
+  const sisaBox = Math.min(sisaBoxByDate, sisaBoxGlobal);
 
   return {
     isAvailable: sisaBox >= requestedBoxes,
-    sisaBox: sisaBox,
+    sisaBox,
+    sisaBoxByDate,
+    sisaBoxGlobal,
   };
 }
 
